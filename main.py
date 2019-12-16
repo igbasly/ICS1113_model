@@ -69,7 +69,8 @@ model.setObjective(
     quicksum(x[l,i,t]*p[l,i] for t in T for i in I for l in L) +
     quicksum(y[l,i,k,t]*e[l,k] for t in T for k in K for i in I for l in L) +
     quicksum(m[l,i,k]*y[l,i,k,t] for l in L for i in I for k in K for t in T) +
-    quicksum(n[l,k,j]*z[l,k,j,t] for l in L for k in K for j in J for t in T),
+    quicksum(n[l,k,j]*z[l,k,j,t] for l in L for k in K for j in J for t in T) +
+    quicksum(c[l,k]*b[l,k,t] for l in L for k in K for t in T),
     GRB.MINIMIZE
 )
 
@@ -96,7 +97,12 @@ model.addConstrs(
 )
 
 model.addConstrs(
-    (b[l,k,t-1] + y[l,i,k,t] == quicksum(z[l,k,j,t] for j in J) + b[l,k,t]\
+    (x[l,i,t] == 0 for l in L for i in I for t in [T[-2],T[-1]]),
+    "R3-3"
+)
+
+model.addConstrs(
+    (b[l,k,t-1] + quicksum(y[l,i,k,t] for i in I) == quicksum(z[l,k,j,t] for j in J) + b[l,k,t]\
          for l in L for k in K for t in T[1:]),
     "R4-1"
 )
@@ -107,7 +113,7 @@ model.addConstrs(
 )
 
 model.addConstrs(
-    (quicksum(y[l,i,k,t] for l in L for i in I) <= q[k] for k in K for t in T),
+    (quicksum(b[l, k, t] for l in L) <= q[k] for k in K for t in T),
     "R5"
 )
 
