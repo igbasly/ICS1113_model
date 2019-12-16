@@ -1,4 +1,7 @@
-import json
+import json, csv, time
+from random import randint, seed
+
+seed(385)
 
 
 def load_data():
@@ -13,12 +16,19 @@ def load_data():
         "m": 3,
         "l": 1,
         "u": 1,
+        "c": 2,
         "beta": 2
     }
 
     with open("parameters.json", "r", encoding="utf-8") as file:
         data = json.load(file)
-    sets = data["sets"]
+    sets = dict()
+    for s in data["sets"]:
+        if s == "T":
+            sets["T"] = list(range(1, data["sets"]["T"]))
+            continue
+        sets[s] = list(range(data["sets"][s]))
+    
     params = data["params"]
     new_params = dict()
     for p in params:
@@ -99,11 +109,27 @@ def show_results(model):
             print("\n --- Variable desconocida ---")
 
 
-"""import json
-from random import randint
+def generate(filename):
+    with open(filename, "r", encoding="utf-8") as file:
+        data = json.load(file)
+    
+    new_var = dict()
+
+    L = 10
+    K = 0
+
+    for i in range(L):
+        new_var[str(i)] = {"0": randint(50, 5000)}
+    
+    data["params"]["c"] = new_var
+
+    with open(filename, "w", encoding="utf-8") as file:
+        json.dump(data, file)
+
+    print("\n=====     FINISHED VAR 'c'    =====\n")
 
 
-def generate_data():
+def generate_data(filename="parameters.json"):
     sets = {
             "I": 3,
             "L": 10,
@@ -171,53 +197,65 @@ def generate_data():
                 a_dict[n1] = randint(aux3[p][0], aux3[p][1])
         params[p] = a_dict
 
-    with open("parameters.json", "w", encoding="utf-8") as file:
+    with open(filename, "w", encoding="utf-8") as file:
         json.dump({"sets": sets, "params": params}, file)
     
-    print("="*10, "  DATA CREATED  ", "="*10)
+    generate(filename)
+    
+    print("="*10, f"  DATA CREATED IN {filename}  ", "="*10)
 
 
-def load_data():
-
-    aux = {
-        "s": 1,
-        "d": 3,
-        "q": 1,
-        "p": 2,
-        "e": 2,
-        "n": 3,
-        "m": 3,
-        "l": 1,
-        "u": 1,
-        "beta": 2
+def generate_file_results(model, sets):
+    helper = {
+        "x": ("l", "i", "t"),
+        "y": ("l", "i", "k", "t"),
+        "z": ("l", "k", "j", "t"),
+        "b": ("l", "k", "t"),
+        "w": ("k", "j", "t")
     }
 
-    with open("parameters.json", "r", encoding="utf-8") as file:
-        data = json.load(file)
-    sets = data["sets"]
-    params = data["params"]
-    new_params = dict()
-    for p in params:
-        values = dict()
-        for i in params[p]:
-            if aux[p] > 1:
-                param1 = params[p][i]
-                for j in param1:
-                    if aux[p] > 2:
-                        param2 = params[p][i][j]
-                        for k in param2:
-                            tup = (int(i), int(j), int(k))
-                            values[tup] = param2[k]
-                    else:
-                        tup = (int(i), int(j))
-                        values[tup] = param1[j]
+    with open(
+        f"results_model_G69_{time.strftime('%d_%m_%Y_%H_%M_%S')}.csv",
+        "w",
+        encoding="utf-8"
+        ) as file:
+
+        writer = csv.writer(file)
+
+        writer.writerow(["Valor optimo: ", model.objVal])
+        writer.writerow([])
+
+        header = ["Variable", "t:"]
+        header.extend(sets["T"])
+        writer.writerow(header)
+
+        vars_aux = dict()
+        for var in model.getVars():
+            name = var.varName
+            naml = name.split("_")
+            name2 = "_".join(naml[:-1])
+            if vars_aux.get(name[0]):
+                var1 = vars_aux[name[0]]
+                if var1.get(name2):
+                    var1[name2].append((name, var.x))
+                else:
+                    var1[name2] = [(name, var.x)]
             else:
-                tup = (int(i))
-                values[tup] = params[p][i]
-        new_params[p] = values
-    
-    return sets, new_params
+                vars_aux[name[0]] = {f"{name2}": [(name, var.x)]}
+
+        for v in vars_aux:
+            writer.writerow([f"{v}_" + "_".join(helper[v])])
+            var = vars_aux[v]
+            for v1 in var:
+                var1 = var[v1]
+
+                var1.sort(key=lambda x: int(x[0].split("_")[-1]))
+                row = [v1 + "_t", ""] 
+                for var2 in var1:
+                    row.append(var2[1])
+                writer.writerow(row)
 
 
 if "__main__" == __name__:
-    generate_data()"""
+    generate_data()
+    

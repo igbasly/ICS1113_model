@@ -1,5 +1,5 @@
 from gurobipy import (Model, GRB, quicksum, GurobiError)
-from maker import load_data
+from maker import load_data, show_results, generate_file_results
 import json
 
 
@@ -7,11 +7,11 @@ sets, params = load_data()
 
 
 # Conjuntos
-T = list(range(1, sets["T"]))
-I = list(range(sets["I"]))
-L = list(range(sets["L"]))
-J = list(range(sets["J"]))
-K = list(range(sets["K"]))
+T = sets["T"]
+I = sets["I"]
+L = sets["L"]
+J = sets["J"]
+K = sets["K"]
 
 
 # Parametros
@@ -24,6 +24,7 @@ m = params["m"]
 n = params["n"]
 vl = params["l"]
 u = params["u"]
+c = params["c"]
 beta = params["beta"]
 
 
@@ -133,60 +134,14 @@ model.addConstrs(
 )
 
 
+
 try:
-    helper = {
-        "x": ("l", "i", "t"),
-        "y": ("l", "i", "k", "t"),
-        "z": ("l", "k", "j", "t"),
-        "b": ("l", "k", "t"),
-        "w": ("k", "j", "t")
-    }
     model.optimize()
-    variables = {
-        "x": dict(),
-        "y": dict(),
-        "z": dict(),
-        "b": dict(),
-        "w": dict()
-    }
+
     for var in model.getVars():
-        name = var.varName
-        variables[name[0]][tuple(name[2:].split("_"))] = var.x
-    
-    print("="*10, "  MODELO OPTIMIZADO  ", "="*10,"\n\n")
+        print(f"{var.varName} -> {var.x}")
 
-    print("Valor objetivo:", model.objVal)
-
-    inp = ""
-    while True:
-        print("Seleccione un tipo de variable\n - " + "\n - ".join(["x", "y", "z", "b", "w"]))
-        print("Ingrese 'q' para salir")
-        inp = input("> ")
-        if inp == "q":
-            break
-        if variables.get(inp):
-            print(f"\nIngrese los indices para la varibale {inp} de la forma {','.join(helper[inp])}",
-            "\nIngrese all para ver todos los resulatdos")
-            inp1 = input("> ")
-            indexes = tuple(inp1.split(","))
-            if inp1 == "all":
-                print("="*20,"\nRESULTADOS:\n")
-                for var in variables[inp]:
-                    print(f"{inp}{var} -> {variables[inp][var]}")
-                print("="*20)
-            else:
-                if len(indexes) != len(helper[inp]):
-                    print("\n  ---- Indices mal ingresados :( ----")
-                else:
-                    value = variables[inp].get(indexes)
-                    if value is not None:
-                        print("="*20,"\nRESULTADO:")
-                        print(f"{inp}({','.join(indexes)}) -> {value}"+"\n"+"="*20+"\n")
-                    else:
-                        print("\n  --- No hay resultados para la varibale ingresada :( ---")
-        else:
-            print("\n --- Variable desconocida ---")
-
+    generate_file_results(model, sets)
 
 except GurobiError as e:
     print('Error code ' + str(e.errno) + ": " + str(e))
