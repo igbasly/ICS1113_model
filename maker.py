@@ -4,7 +4,7 @@ from random import randint, seed
 seed(385)
 
 
-def load_data():
+def load_data(filename="parameters.json"):
 
     aux = {
         "s": 1,
@@ -20,7 +20,7 @@ def load_data():
         "beta": 2
     }
 
-    with open("parameters.json", "r", encoding="utf-8") as file:
+    with open(filename, "r", encoding="utf-8") as file:
         data = json.load(file)
     sets = dict()
     for s in data["sets"]:
@@ -109,27 +109,10 @@ def show_results(model):
             print("\n --- Variable desconocida ---")
 
 
-def generate(filename):
-    with open(filename, "r", encoding="utf-8") as file:
-        data = json.load(file)
-    
-    new_var = dict()
-
-    L = 10
-    K = 0
-
-    for i in range(L):
-        new_var[str(i)] = {"0": randint(50, 5000)}
-    
-    data["params"]["c"] = new_var
-
-    with open(filename, "w", encoding="utf-8") as file:
-        json.dump(data, file)
-
-    print("\n=====     FINISHED VAR 'c'    =====\n")
-
-
-def generate_data(filename="parameters.json"):
+def generate_data(filename="parameters.json", changes=False, args=dict()):
+    if filename == "parameters.json" and not changes:
+        print("="*10, "   DATA NOT CHANGED   ", "="*10)
+        return 
     sets = {
             "I": 3,
             "L": 10,
@@ -156,6 +139,7 @@ def generate_data(filename="parameters.json"):
         "m": [1000, 10000],
         "l": [50, 100],
         "u": [2000, 3000],
+        "c": [50, 5000],
         "beta": [500, 1000]
     }
 
@@ -169,12 +153,15 @@ def generate_data(filename="parameters.json"):
         "m": ["l", "i", "k"],
         "l": ["k"],
         "u": ["k"],
+        "c": ["l", "k"],
         "beta": ["k", "l"]
     }
 
     params = dict()
 
     for p in aux2:
+        if changes and p not in args:
+            continue
         index = aux2[p]
 
         a_dict = dict()
@@ -188,21 +175,37 @@ def generate_data(filename="parameters.json"):
                         i3 = index[2]
                         a_dict_3 = dict()
                         for n3 in range(sets[aux[i3]]):
-                            a_dict_3[n3] = randint(aux3[p][0], aux3[p][1])
+                            if p in args:
+                                a_dict_3[n3] = randint(args[p][0], args[p][1])
+                            else:
+                                a_dict_3[n3] = randint(aux3[p][0], aux3[p][1])
                         a_dict_2[n2] = a_dict_3
                     else:
-                        a_dict_2[n2] = randint(aux3[p][0], aux3[p][1])
+                        if p in args:
+                            a_dict_2[n2] = randint(args[p][0], args[p][1])
+                        else:
+                            a_dict_2[n2] = randint(aux3[p][0], aux3[p][1])
                 a_dict[n1] = a_dict_2
             else:
-                a_dict[n1] = randint(aux3[p][0], aux3[p][1])
+                if p in args:
+                    a_dict[n1] = randint(args[p][0], args[p][1])
+                else:
+                    a_dict[n1] = randint(aux3[p][0], aux3[p][1])
         params[p] = a_dict
-
-    with open(filename, "w", encoding="utf-8") as file:
-        json.dump({"sets": sets, "params": params}, file)
     
-    generate(filename)
+    if changes:
+        with open(filename, "r", encoding="utf-8") as file:
+            data = json.load(file)
+            for p in params:
+                data["params"][p] = params[p]
+        with open(filename, "w", encoding="utf-8") as file:
+            json.dump(data, file)
+        print("="*10, f"  DATA CHANGED  ", "="*10) 
+    else:
+        with open(filename, "w", encoding="utf-8") as file:
+            json.dump({"sets": sets, "params": params}, file)
     
-    print("="*10, f"  DATA CREATED IN {filename}  ", "="*10)
+        print("="*10, f"  DATA CREATED IN {filename}  ", "="*10)
 
 
 def generate_file_results(model, sets):
@@ -258,4 +261,3 @@ def generate_file_results(model, sets):
 
 if "__main__" == __name__:
     generate_data()
-    

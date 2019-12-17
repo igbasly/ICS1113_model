@@ -3,7 +3,7 @@ from maker import load_data, show_results, generate_file_results
 import json
 
 
-sets, params = load_data()
+sets, params = load_data("parameters.json")
 
 
 # Conjuntos
@@ -146,5 +146,6 @@ try:
 except GurobiError as e:
     print('Error code ' + str(e.errno) + ": " + str(e))
 
-except AttributeError:
+except AttributeError as error:
+    print(error)
     print('Encountered an attribute error')
